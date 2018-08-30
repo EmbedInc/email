@@ -244,6 +244,12 @@ procedure email_adr_translate (        {xlate email address thru mail.adr env fi
   in out  adr: email_adr_t);           {email address descriptor to translate}
   val_param; extern;
 
+procedure inet_connect (               {connect to remote system, if needed}
+  in out  rinfo: smtp_rinfo_t;         {info about the remote system}
+  out     new_conn: boolean;           {TRUE on connected if previously wasn't}
+  out     stat: sys_err_t);            {returned completion status code}
+  val_param; extern;
+
 procedure inet_cstr_crlf_put (         {send CRLF terminated string, C format}
   in      cstr: univ string;           {string, NULL terminated, no CRLF}
   in out  conn: file_conn_t;           {handle to internet stream to write to}
