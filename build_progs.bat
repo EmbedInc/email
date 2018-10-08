@@ -5,11 +5,7 @@ rem
 rem   Build the executable programs from this library.
 rem
 setlocal
-set srcdir=email
-set buildname=
-
-call src_go %srcdir%
-call src_getfrom stuff stuff.ins.pas
+call build_pasinit
 
 call src_prog %srcdir% pop3 %1
 call src_prog %srcdir% sendmail %1
