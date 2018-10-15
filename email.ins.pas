@@ -305,7 +305,7 @@ procedure smtp_client_log_err (        {write log entry describing error}
   in out  cl: smtp_client_t;           {info about the particular client}
   in      stat: sys_err_t;             {error status}
   in      subsys: string;              {name of subsystem, used to find message file}
-  in      msg: string;                 {message name withing subsystem file}
+  in      msg: string;                 {message name within subsystem file}
   in      parms: univ sys_parm_msg_ar_t; {array of parameter descriptors}
   in      n_parms: sys_int_machine_t); {number of parameters in PARMS}
   val_param; extern;
@@ -456,10 +456,27 @@ procedure smtp_rinfo_read_env (        {update RINFO from data in environment fi
   out     stat: sys_err_t);            {returned completion status code}
   val_param; extern;
 
-procedure smtp_send (                  {send all mail in queue to remote system}
+procedure smtp_send (                  {send all mail in queue over existing connection}
   in out  conn: file_conn_t;           {connection handle to internet stream}
   in out  qconn: smtp_qconn_read_t;    {handle to SMTP queue open for read}
   in out  turn: boolean;               {issue TURN at end on TRUE, TRUE if TURNed}
+  out     stat: sys_err_t);            {returned completion status code}
+  val_param; extern;
+
+procedure smtp_send_host (             {send a mail message to specified host}
+  in      host: univ string_var_arg_t; {name of host machine to send to}
+  in      opts: smtp_queue_options_t;  {options that apply to the message's queue}
+  in out  mconn: file_conn_t;          {connection to the message}
+  in out  adrlist: string_list_t;      {adr to send to, successfully sent adrs deleted}
+  out     stat: sys_err_t);            {returned completion status code}
+  val_param; extern;
+
+procedure smtp_send_message (          {send message over existing connection}
+  in out  hconn: file_conn_t;          {existing connection to the SMTP host}
+  in      init: boolean;               {do SMTP initial handshake}
+  in out  mconn: file_conn_t;          {connection to message file, at any position}
+  in out  adrlist: string_list_t;      {list of destination addresses for this message}
+  in      opts: smtp_queue_options_t;  {options that apply to the message's queue}
   out     stat: sys_err_t);            {returned completion status code}
   val_param; extern;
 
@@ -467,5 +484,10 @@ procedure smtp_send_queue (            {send all mail in a queue}
   in      qname: univ string_var_arg_t; {generic queue name}
   in      recv: boolean;               {try to receive incoming mail on TRUE}
   in      queue_in: univ string_var_arg_t; {name of input queue on RECV TRUE}
+  out     stat: sys_err_t);            {returned completion status code}
+  val_param; extern;
+
+procedure smtp_send_queue_mx (         {send all mail in queue to hosts using MX lookup}
+  in out  qconn: smtp_qconn_read_t;    {open connection for reading the queue}
   out     stat: sys_err_t);            {returned completion status code}
   val_param; extern;

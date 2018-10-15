@@ -62,11 +62,17 @@ begin
   if sys_error(stat) then goto leave;
   qconn_open := true;                  {remember that QCONN is now an open handle}
 
-  if qconn.opts.sendmail then goto sendmail; {send mail to SENDMAIL program ?}
+  if qconn.opts.sendmail then begin    {send mail to SENDMAIL program ?}
+    goto sendmail;
+    end;
+  if string_equal(qconn.opts.remotesys, string_v('--MX--'(0))) then begin
+    smtp_send_queue_mx (qconn, stat);  {send to hosts according to destination domains}
+    goto leave;
+    end;
 {
 ************************************************************************
 *
-*   Send mail to remote system via SMTP.
+*   Send mail to a specific remote system via SMTP.
 }
   if qconn.opts.port = 0 then begin    {default server port indicated ?}
     qconn.opts.port := smtp_port_k;    {use standard SMTP port}

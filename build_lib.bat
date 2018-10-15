@@ -1,5 +1,7 @@
 @echo off
 rem
+rem   BUILD_LIB [-dbg]
+rem
 rem   Build the EMAIL library.
 rem
 setlocal
@@ -20,8 +22,14 @@ call src_pas %srcdir% smtp_recv %1
 call src_pas %srcdir% smtp_rinfo %1
 call src_pas %srcdir% smtp_rqmeth %1
 call src_pas %srcdir% smtp_send %1
+call src_pas %srcdir% smtp_send_host %1
+call src_pas %srcdir% smtp_send_message %1
 call src_pas %srcdir% smtp_send_queue %1
+call src_pas %srcdir% smtp_send_queue_mx %1
 call src_pas %srcdir% smtp_subs %1
 
 call src_lib %srcdir% %libname%
 call src_msg %srcdir% %libname%
+
+call src_get %srcdir% email.txt
+copya email.txt (cog)doc/email.txt

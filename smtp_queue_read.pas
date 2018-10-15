@@ -10,16 +10,16 @@ define smtp_queue_read_ent_close;
 define smtp_queue_read_close;
 %include 'email2.ins.pas';
 {
-********************************************************************
+********************************************************************************
 *
 *   Subroutine SMTP_QUEUE_READ_OPEN (QNAME, MEM, QCONN, STAT)
 *
-*   Open a connection for reading entries from an SMTP queue.  QNAME is the
-*   name of the specific SMTP queue to open.
+*   Open a connection for reading entries from an SMTP queue.  QNAME is the name
+*   of the specific SMTP queue to open.
 *
 *   MEM is the parent memory context to use.  All our memory will be allocated
-*   under a subordinate memory context.  QCONN is the returned handle
-*   to the newly created queue connection.
+*   under a subordinate memory context.  QCONN is the returned handle to the
+*   newly created queue connection.
 }
 procedure smtp_queue_read_open (       {open an SMTP queue for read}
   in      qname: univ string_var_arg_t; {name of queue to open}
@@ -73,7 +73,7 @@ next_ent:                              {back here each new directory entry to re
     goto abort;
     end;
   if                                   {this entry is a control file ?}
-      (tnam.len >= 1) and (tnam.str[1] = 'c') or (tnam.str[1] = 'C')
+      (tnam.len >= 1) and ((tnam.str[1] = 'c') or (tnam.str[1] = 'C'))
       then begin
     qconn.list_ents.size := tnam.len;  {add this file name to list}
     string_list_line_add (qconn.list_ents);
@@ -91,17 +91,27 @@ abort:                                 {clean up to ret with err, STAT already s
   util_mem_context_del (qconn.mem_p);  {deallocate all our dynamic memory}
   end;                                 {return with error}
 {
-********************************************************************
+********************************************************************************
 *
 *   Subroutine SMTP_QUEUE_READ_ENT (QCONN, TO_LIST_P, MCONN_P, STAT)
 *
-*   Open the next queue entry for read.  QCONN is the queue connection
-*   handle returned from SMTP_QUEUE_READ_OPEN.  TO_LIST_P is returned pointing
-*   to the list of destination addresses for this mail message.  MCONN_P
-*   is returned pointing to the file connection handle to the mail message
-*   file.  The caller must not close MCONN_P^.  STAT is returned with the
-*   status EMAIL_STAT_QUEUE_END_K when the end of the queue is reached.
-*   TO_LIST_P and MCONN_P are invalid unless STAT indicates normal completion.
+*   Open the next queue entry for read.  QCONN is the queue connection handle
+*   returned from SMTP_QUEUE_READ_OPEN.
+*
+*   TO_LIST_P is returned pointing to the list of destination addresses for this
+*   mail message.  The list position is initialized to before the start of the
+*   first entry.
+*
+*   MCONN_P is returned pointing to the file connection handle to the mail
+*   message file.  The caller must not close MCONN_P^ separately.  This is
+*   handled internally when this whole queue entry is closed.
+*
+*   STAT is returned with the status EMAIL_STAT_QUEUE_END_K when the end of the
+*   queue is reached.  TO_LIST_P and MCONN_P are invalid unless STAT indicates
+*   normal completion.
+*
+*   No entry must be currently open.  A previous entry must be closed before
+*   attempting to open the next entry.
 }
 procedure smtp_queue_read_ent (        {read next SMTP queue entry}
   in out  qconn: smtp_qconn_read_t;    {handle to queue read connection}
@@ -178,6 +188,8 @@ next_adr:                              {back here each new line in adr list file
     file_close (conn);                 {clean up}
     goto next_ent2;                    {abort this queue entry}
     end;
+  string_unpad (buf);                  {truncate any trailing spaces}
+  if buf.len = 0 then goto next_adr;   {nothing on this line ?}
   qconn.list_adr.size := buf.len;      {add this address to list}
   string_list_line_add (qconn.list_adr);
   string_copy (buf, qconn.list_adr.str_p^);
@@ -217,7 +229,7 @@ eoq:
   sys_stat_set (email_subsys_k, email_stat_queue_end_k, stat);
   end;
 {
-********************************************************************
+********************************************************************************
 *
 *   Subroutine SMTP_QUEUE_READ_ENT_CLOSE (QCONN, FLAGS, STAT)
 *
@@ -281,7 +293,7 @@ begin
   string_list_pos_rel (qconn.list_ents, 1); {advance to next control file in list}
   end;
 {
-********************************************************************
+********************************************************************************
 *
 *   Subroutine SMTP_QUEUE_READ_CLOSE (QCONN, STAT)
 *

@@ -13,5 +13,8 @@ smtp_recv.obj
 smtp_rinfo.obj
 smtp_rqmeth.obj
 smtp_send.obj
+smtp_send_host.obj
+smtp_send_message.obj
 smtp_send_queue.obj
+smtp_send_queue_mx.obj
 smtp_subs.obj
