@@ -1,0 +1,295 @@
+
+
+             Embed Inc Email Transport and Queueing System
+
+This document describes the overall structure of the Embed Inc email
+transport and queueing system and provides pointers to the other
+documentation files on specific aspects of the system.
+
+
+                       Email Transport Background
+
+Email is transmitted from one machine to another using the SMTP (Simple
+Mail Transfer Protocol) standard.  Once the email arrives on the "last"
+machine, it is generally put into a queue for each end user.  The end user
+retrieves the mail from the queue using a mailer program (like Eudora or
+Microsoft Outlook Express, for example).  The mailer communicates with a
+server on the machine where the email is queued using the POP3 (Post
+Office Protocol 3) standard.  The mailer sends outgoing email via SMTP.
+
+The Embed Inc email system includes SMTP and POP3 servers, and a system
+for queueing and routing email destined for end users via POP3, and remote
+systems via SMTP.  See the SMTP and POP3 documentation files for details
+on these programs.  The Embed Inc email system also includes a program
+called MAILCHECK that can transfer all email to/from a remote system.  It
+can work with a dedicated LAN or WAN connection or a dialup.  See the
+MAILCHECK documentation file for details.
+
+
+                            Queue Structure
+
+All the email queues and associated control files are in the Embed Inc
+SMTPQ directory.  This directory is directly within the Embed Inc software
+installation directory.  The default installation directory on PC systems
+is c:\embedinc.  In that case the email queue directory is
+c:\embedinc\smtpq.  Note that this may be a symbolic link pointing to
+another directory.  Use the Embed Inc L command to list the installation
+directory to see whether SMTPQ is a symbolic link, and if so, where it is
+pointing.
+
+
+Technical details of email queues
+
+  This section can be skipped by end users.  It may be useful background
+  information for system administrators that are trying to diagnose
+  problems.
+
+  Within the SMTPQ directory are subdirectories for individually named
+  queues.  The subdirectory names are the queue names.  It is intended
+  that there be one queue for each remote system or means of passing along
+  mail.  For example, the queue for passing mail to system
+  "mailer.bestnet.com" via SMTP might be called "bestnet".  There might
+  also be a queue called "sendmail" for mail waiting to be passed to the
+  local sendmail program.
+
+  The SMTPQ directory and each queue directory within it may contain an
+  OPTIONS file.  These contain control information about the email system
+  and individual queues.  OPTIONS files are described in detail later in
+  this document.
+
+  Files within each queue have special naming conventions.  A queue may
+  contain a file called "options".  This file is identical in function and
+  syntax to the top level OPTIONS file, except that it applies only to
+  that queue.  Commands in local queue OPTIONS files override settings
+  from the top level OPTIONS file in case of conflict.
+
+  Individual mail message entries within a queue are identified by control
+  files.  The names of these files always start with "c", followed by a
+  number.  Valid control files have non-zero length.  A control file with
+  zero length is the same as a non-existent control file.  Control files
+  are used as interlocks between asynchronous processes.  All other files
+  for the same queue entry start with a different letter, followed by the
+  same number as in the control file name.
+
+  The addresses list file name starts with "a".  This file contains each
+  mail destination address on a separate line.
+
+  The mail message file name starts with "m".  This is a text file that
+  simply contains the mail message itself.
+
+  All file names not explicitly mentioned are reserved.  In other words,
+  it is not permissible to leave "junk" files in an SMTP queue.
+
+  To provide interlock between processes, the C file must be opened for
+  read and write the entire time any other files for that queue entry are
+  created, written, read, deleted, or otherwise accessed.  When a C file
+  can't be opened when trying to create an entry, a different sequence
+  number is used.  When trying to read a queue entry, it should be
+  considered non-existant on any of the following conditions:
+
+    1) The control file doesn't exist, or it can't be opened for read and
+       write.
+
+    2) The control file is found to have zero length after it was opened.
+
+    3) Any of the queue entry mandatory files (like the A and M files) are
+       not found.
+
+
+OPTIONS files description
+
+  There may be a file called "options" in the top level queue directory,
+  and within each queue.  If so, these files contain a set of commands.
+  The first keyword on each line is a command name. Subsequent fields, if
+  any, are parameters specific to that command. The valid OPTIONS file
+  commands are listed below.
+
+  All OPTIONS file keywords are case-insensitive.  Commands and parameters
+  are separated by one or more spaces.  Leading and trailing spaces are
+  ignored.  Blank lines, or lines containing only spaces are ignored.  If
+  any command parameter contains spaces, the parameter must be enclosed in
+  quotes (") or apostrophies (').
+
+  The OPTIONS file commands are:
+
+    * <comment>
+
+      Any line where the first non-blank characters is "*", is totally
+      ignored.
+
+    LOCALSYS <local system name>
+
+      Sets the local system name as it should be viewed from outside. This
+      should be a fully qualified machine and domain name.  For example,
+      use "ODIN.VALHALLA.ORG" instead of just "ODIN".  This command is
+      typically put in the top level OPTIONS file.
+
+    RECVDOM domain ... domain
+
+      Provides the list of domains to unconditionally accept mail for.
+      This is intended to be the domains this server is responsible for
+      receiving mail for.  Mail messages to any address within these
+      domains will be accepted without the sender having to authenticate.
+      Accepting mail for other domains is assumed to be a relay action,
+      which is only done for authenticated users.  The list of domain
+      names must be separated by spaces.  Each domain name must be fully
+      qualified and inlude the top level domain, like "acme.com".  The
+      domain names are case-insensitive.
+
+    REMOTESYS <remote system name>
+
+      Sets the remote system name in whatever form is necessary to reach
+      it from the local machine.  This command is typically put in the
+      OPTIONS file for each queue, since each queue usually holds mail
+      destined for a particular system.  The default remote system name is
+      the generic queue name.
+
+      If REMOTESYS is explicitly set to the empty string (""), then SMTP
+      transfer from this mail queue is inhibited.
+
+      If REMOTESYS is set to the special string "--MX--", then MX lookups
+      will be done on recipient addresses to determine the remote systems
+      on the fly.  When MX lookups are used, other values should be set as
+      follows:
+
+        REMOTEUSER ""
+        REMOTEPSWD ""
+        BOUNCEFROM <some reasonable address>
+
+    REMOTEUSER username
+
+      Specifies the user name required to access the remote server. It is
+      assumed that no user name is required when USERNAME is empty. The
+      default is an empty user name.
+
+    REMOTEPSWD password
+
+      Specifies the password required to access the remote server. It is
+      assumed that no password is required when PASSWORD is empty. The
+      default is an empty password.
+
+    REM_RESP <remote system name>
+
+      Name of remote system as reported by that system.  The default is
+      the REMOTESYS value, above.  Note the distinction between REMOTESYS
+      and REM_RESP.  The REMOTESYS name is the name of the remote system
+      from the local system's point of view.  The REM_RESP is the name
+      reported by the remote system itself.
+
+    SENDMAIL
+
+      Send all mail to the SENDMAIL program on the local machine. The
+      default is to send mail via the SMTP protocol.  This switch is
+      generally set for the incoming mail queue.  The SENDMAIL program
+      runs locally and decides how an email message is to be delivered,
+      then does it.  Incoming email messages are generally "delivered" by
+      storing them in a queue for a particular user.  The MAIL.ADR
+      environment file set describes how email addresses are delivered.
+      See the MAIL_ADR documentation file for details.
+
+    INQ <generic queue name>
+
+      Set the mail queue into which to place any incoming mail. This may
+      be just a default overidden by the user for programs that use this
+      feature.  Typically, incoming mail is placed into a queue with
+      SENDMAIL enabled.  This causes incoming messages to be delivered via
+      various mailer scripts, depending on the target email address.  See
+      the MAIL_ADR documentation file for a description.
+
+    PORT <server port ID on remote system>
+
+      Indicates the port number of the server on the remote machine.
+      Setting this value to zero, or omitting the parameter after the PORT
+      command indicates to use a default.  Note that the standard SMTP
+      server port is 25.  This is not something you should mess with
+      unless you've got an unusual setup and know excatly what you are
+      doing.
+
+    SMTP_CMD <command name>
+
+      Sets the system command to use to run the SMTP program.  SMTP_CMD is
+      neccessary when the SMTP command is not in the command search path,
+      or you want to unambigously run a particular version.  The default
+      is "smtp" in the Embed Inc "com" directory.
+
+    AUTOSEND <ON or OFF>
+
+      When a program finishes putting mail into a queue, it will attempt
+      to send everything in that queue when AUTOSEND is ON. The mail will
+      be sent from a separate process excuting the command
+
+        smtp -client -outq <queue name>
+
+      where <queue name> is replaced by the generic name of the queue from
+      which the mail is to be sent.  The command "smtp" is replaced by
+      whatever is set with the SMTP_CMD command.  The default is AUTOSEND
+      OFF.
+
+    POP3 <ON or OFF>
+
+      Enable/disable the POP3 (Post Office Protocol version 3, RFC 1725)
+      server on this queue.  The POP3 server always denies access for any
+      queue where POP3 is set to OFF.  When POP3 is set to ON, it is
+      strongly recommended that a PASSWORD command also be used. The
+      default is POP3 OFF.
+
+    USERPUT <ON or OFF>
+
+      Indicate whether a local client must authenticate themselves to
+      relay mail thru this system to external addresses.  Remote clients
+      not from an unroutable IP address must always authenticate
+      themselves unless sending mail to an internal address.  Mail for
+      internal addresses are always accepted whether from authenticated
+      clients or not.
+
+    PSWDGET password
+
+      Sets the password required for remote clients to receive mail from
+      this queue.  Not all programs necessarily make use of this. The POP3
+      server will deny access unless all of these conditions are met:
+
+        1)   The POP3 user name matches a generic queue name.
+
+        2)   POP3 is enabled for that queue, see POP3 command, above.
+
+        3)   The POP3 password matches this password.
+
+      This password can also be set with the PASSWORD command, below. The
+      default password is the empty string.
+
+    PSWDPUT password
+
+      Sets the password required for remote clients to send mail to this
+      system.  The empty string disables password validation, thereby
+      preventing clients from authenticating themselves.
+
+      To authenticate itself, a client must provide a suitable user name
+      and password.  The user names are the directory names within the
+      SMTPQ directory.  A password specified in a queue directory
+      therefore only applies to the user name of that queue directory
+      name.
+
+      This password can also be set with the PASSWORD command, below. The
+      default password is the empty string.
+
+    PASSWORD password
+
+      Sets all passwords.  This is done globally if this command appears
+      in the top level OPTIONS file, or just for a specific queue when it
+      appears in the OPTIONS file for that queue. Individual passwords can
+      be set by the PSWDGET and PSWDPUT commands.  The default password is
+      the empty string.
+
+    BOUNCEFROM address
+
+      Sets the FROM: email address for automatically generated bounce
+      messages.  The default bounce FROM: address is autoreply@localsys,
+      where LOCALSYS is the value supplied by the LOCALSYS command
+      (ABOVE).
+
+      If BOUNCEFROM or LOCALSYS are set to the empty string (""), then no
+      bounce messages will be generated.
+
+  Commands in an OPTIONS file in a particular queue override the commands
+  in the OPTIONS file at the top level (directly in the SMTPQ directory).
+  An OPTIONS file within a particular queue only applies to that queue.
