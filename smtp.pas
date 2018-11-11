@@ -326,7 +326,7 @@ mode_server_k: begin
 loop_server:                           {back here for each new client}
   if client_p = nil then begin         {no client descriptor ?}
     smtp_client_new (client_p);        {create new client descriptor}
-    string_copy (inq, client_p^.inq);  {set input mail queue to use}
+    string_copy (inq, client_p^.inq);  {set specific input queue to use, if any}
     end;
 
   file_open_inetstr_accept (           {wait for a client to connect to us}
@@ -345,6 +345,7 @@ loop_server:                           {back here for each new client}
   if sclient
     then begin                         {only single client at a time allowed}
       smtp_client_thread (client_p^);  {process this client synchronously}
+      client_p := nil;                 {thread routine always closes client}
       end
     else begin                         {multiple simultaneous clients allowed}
       sys_thread_create (              {launch separate thread to handle this client}
@@ -358,13 +359,12 @@ loop_server:                           {back here for each new client}
         goto loop_server;
         end;
       sys_thread_release (id_thread, stat); {release thread resources on thread exit}
+      client_p := nil;                 {force creating a new descriptor next time}
       if sys_error(stat) then begin
         smtp_client_log_err (client_p^, stat, 'email', 'smtp_client_thread_release', nil, 0);
         end;
       end
     ;
-
-  client_p := nil;                     {indicate no free client context available}
   goto loop_server;                    {back to wait for next client}
   end;                                 {end of SERVER program mode case}
 {

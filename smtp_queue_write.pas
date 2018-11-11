@@ -12,20 +12,20 @@ const
   max_seq_k = 999;                     {max allowed queue sequence number}
   seq_fw_k = 3;                        {sequence number field width}
 {
-********************************************************************
+********************************************************************************
 *
 *   SMTP_QUEUE_CREATE_ENT (QNAME, CONN_C, CONN_A, CONN_M, STAT)
 *
 *   Create a new mail queue entry.  QNAME is the generic mail queue name to
 *   create the entry within.  This is also the subdirectory name within the
-*   generic Cognivision "smptq" directory.  The CONN_x arguments are the
-*   returned connection handles to the control file, addresses list file,
-*   and mail message file, respectively.
+*   generic Embed "smptq" directory.  The CONN_x arguments are the returned
+*   connection handles to the control file, addresses list file, and mail
+*   message file, respectively.
 *
 *   The A and M files are open for text write.  The C file is open for binary
 *   read and write.  This is an interlock file only; no I/O should be performed
-*   to it.  The caller must not close any of the three file connections.
-*   This must be done with routine SMTP_QUEUE_CREATE_CLOSE.
+*   to it.  The caller must not close any of the three file connections.  This
+*   must be done with routine SMTP_QUEUE_CREATE_CLOSE.
 }
 procedure smtp_queue_create_ent (      {create a new mail queue entry}
   in      qname: univ string_var_arg_t; {generic name of queue to create entry in}
@@ -44,7 +44,7 @@ var
   finfo: file_info_t;                  {info about control file}
 
 label
-  abort_c, got_c, abort2, abort1;
+  abort_a, abort_c;
 
 begin
   tnam.max := sizeof(tnam.str);        {init local var strings}
@@ -56,9 +56,8 @@ begin
   string_pathname_join (tnam, qname, tnam2); {make raw specific queue dir name}
   string_treename (tnam2, tnam);       {make full queue directory tree name}
 
-  gnam.str[1] := 'c';                  {init static part of control file leaf name}
-
   for seq_n := 1 to max_seq_k do begin {once for each allowable sequence number}
+    gnam.str[1] := 'c';                {init static part of control file leaf name}
     gnam.len := 1;                     {init control file name to leading letter}
     string_f_int_max_base (            {make sequence number string}
       seq,                             {output string}
@@ -88,8 +87,31 @@ begin
       finfo,                           {returned file info}
       stat);
     if sys_error(stat) then goto abort_c; {can't get control file length}
-    if finfo.len = 0 then goto got_c;  {we just created a new entry ?}
-abort_c:                               {jump here to abort current control file}
+    if finfo.len <> 0 then goto abort_c; {length isn't 0, not a new entry ?}
+    {
+    *   The C file is open.  Now try to open the A and M files.
+    }
+    gnam.str[1] := 'a';                  {make addressess list file name}
+    string_pathname_join (tnam, gnam, tnam2); {make full path name}
+    file_open_write_text (tnam2, '', conn_a, stat); {create the addresses file}
+    if sys_error(stat) then goto abort_c;
+
+    gnam.str[1] := 'm';                  {make mail message file name}
+    string_pathname_join (tnam, gnam, tnam2); {make full path name}
+    file_open_write_text (tnam2, '', conn_m, stat); {create the message file}
+    if sys_error(stat) then goto abort_a;
+
+    if debug_smtp >= 10 then begin
+      smtp_client_wrlock;
+      writeln ('Created entry ', seq_n, ' in queue ', qname.str:qname.len);
+      smtp_client_wrunlock;
+      end;
+    return;
+
+abort_a:                               {abort this seq number with A and C files open}
+    file_close (conn_a);
+
+abort_c:                               {abort this seq number with C file open}
     file_pos_end (conn_c, stat);       {prevent truncating file on close}
     sys_error_none (stat);             {ignore any error}
     file_close (conn_c);               {close our connection to this control file}
@@ -100,48 +122,21 @@ abort_c:                               {jump here to abort current control file}
 }
   sys_stat_set (email_subsys_k, email_stat_smtp_queue_full_k, stat);
   sys_stat_parm_vstr (qname, stat);
-  return;
-{
-*   We just created a new control file.  CONN_C is the connection handle to the
-*   new file.
-}
-got_c:
-  gnam.str[1] := 'a';                  {make addressess list file name}
-  string_pathname_join (tnam, gnam, tnam2); {make full control file path name}
-  file_open_write_text (tnam2, '', conn_a, stat); {create A file}
-  if sys_error(stat) then goto abort1;
-
-  gnam.str[1] := 'm';                  {make mail message file name}
-  string_pathname_join (tnam, gnam, tnam2); {make full control file path name}
-  file_open_write_text (tnam2, '', conn_m, stat); {create M file}
-  if sys_error(stat) then goto abort2;
-
-  return;                              {normal return}
-{
-*   Jump here to abort with C and A files open.
-}
-abort2:
-  file_close (conn_a);
-{
-*   Jump here to abort with control file open.
-}
-abort1:
-  file_close (conn_c);
   end;
 {
-********************************************************************
+********************************************************************************
 *
 *   Subroutine SMTP_QUEUE_CREATE_CLOSE (CONN_C, CONN_A, CONN_M, KEEP, STAT)
 *
 *   Close the mail queue entry opened with routine SMTP_QUEUE_CREATE_ENT.
 *   CONN_C, CONN_A, and CONN_M are the connection handles returned when the
-*   queue entry was opened.  These connections must not have been closed.
-*   KEEP must be TRUE if this entry is to be made permanent, and FALSE if this
-*   entry is to be deleted.
+*   queue entry was opened.  These connections must not have been closed.  KEEP
+*   must be TRUE if this entry is to be made permanent, and FALSE if this entry
+*   is to be deleted.
 *
-*   All three queue file connections will be closed.  An attempt will be made
-*   to delete the queue entry on any error, in which case STAT will indicate
-*   the first error encountered.
+*   All three queue file connections will be closed.  An attempt will be made to
+*   delete the queue entry on any error, in which case STAT will indicate the
+*   first error encountered.
 }
 procedure smtp_queue_create_close (    {close queue entry open for creation}
   in out  conn_c: file_conn_t;         {connection handle to control file}

@@ -41,17 +41,17 @@ var
     'RECVDOM   ',                      {17}
     ];
 {
-********************************************************************
+********************************************************************************
 *
 *   SMTP_QUEUE_OPTS_GET (QTOP_DIR, QLOC_DIR, OPTS, STAT)
 *
-*   Read the OPTIONS files in the top level and specific queue directories.
-*   the combined information is returned in OPTS.  QTOP_DIR is the pathname
-*   of the top level queue directory, and QLOC_DIR is the name of the specific
-*   queue directory within the QTOP_DIR directory.  QLOC_DIR may be of zero
-*   length, in which case only the top level options file is read.  It is
-*   no an error if the local queue does not exist, or the OPTIONS file
-*   within that queue does not exist.
+*   Read the OPTIONS files in the top level and specific queue directories.  The
+*   combined information is returned in OPTS.  QTOP_DIR is the pathname of the
+*   top level queue directory, and QLOC_DIR is the name of the specific queue
+*   directory within the QTOP_DIR directory.  QLOC_DIR may be of zero length, in
+*   which case only the top level options file is read.  It is no an error if
+*   the local queue does not exist, or the OPTIONS file within that queue does
+*   not exist.
 }
 var
   options: string_var16_t :=
@@ -61,7 +61,7 @@ var
 
 procedure smtp_queue_opts_get (        {read OPTIONS files and return info}
   in      qtop_dir: univ string_var_arg_t; {name of top level queue directory}
-  in      qloc_dir: univ string_var_arg_t; {name of specific queue directory}
+  in      qloc_dir: univ string_var_arg_t; {optional name of specific queue within top}
   out     opts: smtp_queue_options_t;  {returned values from OPTIONS files}
   out     stat: sys_err_t);            {returned completion status code}
   val_param;

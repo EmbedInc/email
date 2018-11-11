@@ -342,7 +342,7 @@ function smtp_client_open (            {open or reject a new client connection}
   val_param; extern;
 
 procedure smtp_client_thread (         {thread routine for one SMTP client}
-  in out  d: smtp_client_t);           {unique data for this client}
+  in out  cl: smtp_client_t);          {client descriptor, passed by reference}
   extern;
 
 procedure smtp_client_wrlock;          {exclusively lock write output}

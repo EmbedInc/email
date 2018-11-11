@@ -107,6 +107,7 @@ procedure abort_message (              {close and delete any partially written m
   out     stat: sys_err_t);            {returned completion status code}
 
 begin
+  sys_error_none (stat);               {init to no error}
   if not open then return;             {no mail message currently open ?}
   smtp_queue_create_close (            {close and delete this queue entry}
     conn_c, conn_a, conn_m,            {handles to the queue entry files}
