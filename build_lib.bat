@@ -7,6 +7,8 @@ rem
 setlocal
 call build_pasinit
 
+call src_insall %srcdir% %libname%
+
 call src_pas %srcdir% %libname%_adr %1
 call src_pas %srcdir% %libname%_adr_extract %1
 call src_pas %srcdir% %libname%_adr_translate %1
@@ -31,5 +33,4 @@ call src_pas %srcdir% smtp_subs %1
 call src_lib %srcdir% %libname%
 call src_msg %srcdir% %libname%
 
-call src_get %srcdir% email.txt
-copya email.txt (cog)doc/email.txt
+call src_doc %srcdir% email.txt
