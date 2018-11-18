@@ -31,6 +31,8 @@ const
 }
   smtp_port_k = 25;                    {standard SMTP server port number}
   smtp_maxcladr_k = 1;                 {max simultaneous clients from same address}
+  smtp_tout_rd_k = 10.0;               {seconds timeout on read}
+  smtp_tout_wr_k = 10.0;               {seconds timeout on write}
 
 type
   email_tktyp_k_t = (                  {type of incremental email address token}

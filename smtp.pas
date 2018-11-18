@@ -337,6 +337,8 @@ loop_server:                           {back here for each new client}
     smtp_client_log_stat_str (client_p^, stat, 'Error trying to get next client connection.');
     goto loop_server;
     end;
+  file_inetstr_tout_rd (client_p^.conn, smtp_tout_rd_k); {set read timeout}
+  file_inetstr_tout_wr (client_p^.conn, smtp_tout_wr_k); {set write timeout}
 
   if not smtp_client_open (client_p^) then begin {set up descriptor to new connection}
     goto loop_server;                  {connection was closed}

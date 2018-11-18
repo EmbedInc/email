@@ -325,6 +325,9 @@ loop_server:                           {back here for each new client}
     stat);
   if sys_error_check (stat, 'file', 'inetstr_accept', nil, 0)
     then goto loop_server;             {try next client on error}
+  file_inetstr_tout_rd (conn_client, smtp_tout_rd_k); {set read timeout}
+  file_inetstr_tout_wr (conn_client, smtp_tout_wr_k); {set write timeout}
+
   file_inetstr_info_remote (           {get info about the client}
     conn_client,                       {connection inquiring about}
     rem_adr,                           {client node address}
@@ -332,7 +335,6 @@ loop_server:                           {back here for each new client}
     stat);
   if sys_error_check (stat, 'file', 'inet_info_remote', nil, 0)
     then goto abort_client;            {abort this client on error}
-
 
 (*
   file_inet_adr_name (rem_adr, rem_name, stat); {try to get name of remote machine}
@@ -342,7 +344,6 @@ loop_server:                           {back here for each new client}
     end;
 *)
   rem_name.len := 0;
-
 
   if debug_inet < 5 then begin         {show remote system info ?}
     time_string (buf);                 {init output line with current date/time}

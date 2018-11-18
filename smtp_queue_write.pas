@@ -91,12 +91,12 @@ begin
     {
     *   The C file is open.  Now try to open the A and M files.
     }
-    gnam.str[1] := 'a';                  {make addressess list file name}
+    gnam.str[1] := 'a';                {make addressess list file name}
     string_pathname_join (tnam, gnam, tnam2); {make full path name}
     file_open_write_text (tnam2, '', conn_a, stat); {create the addresses file}
     if sys_error(stat) then goto abort_c;
 
-    gnam.str[1] := 'm';                  {make mail message file name}
+    gnam.str[1] := 'm';                {make mail message file name}
     string_pathname_join (tnam, gnam, tnam2); {make full path name}
     file_open_write_text (tnam2, '', conn_m, stat); {create the message file}
     if sys_error(stat) then goto abort_a;
