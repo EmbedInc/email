@@ -261,6 +261,7 @@ msg email_no_alias_out
     must have an alias for <name> declared in the mail.adr environment
     file set.
 msg email_queue_entry_read_close
+  lan english -def
     Error occurred on attempt to close read of mail queue entry.
     Mail message file name was "%p1s".
 msg email_queue_entry_create
@@ -272,6 +273,10 @@ msg email_queue_entry_read_next
 msg email_queue_in_none
   lan english -def
     No mail queue specified for incoming mail.
+msg email_queue_read_close
+  lan english -def
+    Error on attempt to close email queue open for read.
+    Queue name was "%p1s".
 msg email_queue_write_close
   lan english -def
     Error on attempt to close email queue entry after creation.

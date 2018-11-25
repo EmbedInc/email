@@ -609,6 +609,7 @@ eof_retr:                              {end of mail message file encountered}
 }
 9: begin
   if user_ok then begin                {we have mail queue open ?}
+
     for i := 1 to n_msg do begin       {once for each mail message in the list}
       if not msg_ar_p^[i].delete then next; {this message not marked for deletion ?}
       string_list_pos_abs (            {position to open this message next}
@@ -625,11 +626,20 @@ eof_retr:                              {end of mail message file encountered}
         qconn,                         {handle to mail queue connection}
         [smtp_qrclose_del_k],          {delete this queue entry}
         stat);
-      if sys_error_check (stat, 'email', 'email_queue_entry_read_close', msg_parm, 1)
-        then goto abort_client;
+      if sys_error(stat) then begin    {error on deleting queue entry ?}
+        sys_msg_parm_vstr (msg_parm[1], qconn.conn_m.tnam);
+        sys_error_print (stat, 'email', 'email_queue_entry_read_close', msg_parm, 1);
+        goto abort_client;
+        end;
       end;                             {back to check out next messages list entry}
+
     smtp_queue_read_close (qconn, stat); {close our connection to the mail queue}
     user_ok := false;                  {indicate queue no longer open}
+    if sys_error(stat) then begin      {error on closing queue ?}
+      sys_msg_parm_vstr (msg_parm[1], qconn.qdir);
+      sys_error_print (stat, 'email', 'email_queue_read_close', msg_parm, 1);
+      goto abort_client;
+      end;
     end;                               {done cleaing up mail queue state}
 
   inet_cstr_crlf_put ('+OK Closing connection.'(0), conn_client, stat);
@@ -707,6 +717,8 @@ abort_client:
   if user_ok then begin                {mail queue connection open ?}
     if debug_inet >= 10 then writeln ('Calling SMTP_QUEUE_READ_CLOSE.');
     smtp_queue_read_close (qconn, stat); {try to close mail queue connection}
+    sys_msg_parm_vstr (msg_parm[1], qconn.qdir);
+    sys_error_print (stat, 'email', 'email_queue_read_close', msg_parm, 1);
     end;
   if debug_inet >= 10 then writeln ('Calling FILE_CLOSE on client stream.');
   time_string (parm);
