@@ -58,8 +58,6 @@ var
   mconn_p: file_conn_p_t;              {pointer to message body connection handle}
   rem_adr: sys_inet_adr_node_t;        {address of remote client node}
   rem_port: sys_inet_port_id_t;        {client port on remote node}
-  rem_name:                            {name of remote node}
-    %include '(cog)lib/string256.ins.pas';
   user_ok: boolean;                    {TRUE if user properly autenticated}
 
   msg_parm:                            {parameter references for messages}
@@ -336,25 +334,11 @@ loop_server:                           {back here for each new client}
   if sys_error_check (stat, 'file', 'inet_info_remote', nil, 0)
     then goto abort_client;            {abort this client on error}
 
-(*
-  file_inet_adr_name (rem_adr, rem_name, stat); {try to get name of remote machine}
-  if sys_error(stat) then begin        {failed to get remote node name ?}
-    rem_name.len := 0;                 {indicate remote node name not available}
-    sys_error_none (stat);             {reset to no error}
-    end;
-*)
-  rem_name.len := 0;
-
   if debug_inet < 5 then begin         {show remote system info ?}
     time_string (buf);                 {init output line with current date/time}
     string_appends (buf, '  New client on '(0));
     string_f_inetadr (tk, rem_adr);
     string_append (buf, tk);
-    if rem_name.len > 0 then begin     {we have remote node name ?}
-      string_appends (buf, ' ('(0));
-      string_append (buf, rem_name);
-      string_appends (buf, ')'(0));
-      end;
     string_appends (buf, ' at port '(0));
     string_f_int (tk, rem_port);
     string_append (buf, tk);
@@ -366,11 +350,6 @@ loop_server:                           {back here for each new client}
   string_vstring (buf, '+OK Logged access by '(0), -1);
   string_f_inetadr (tk, rem_adr);
   string_append (buf, tk);
-  if rem_name.len > 0 then begin       {we have remote node name ?}
-    string_appends (buf, ' ('(0));
-    string_append (buf, rem_name);
-    string_appends (buf, ')'(0));
-    end;
   string_appends (buf, ' from port '(0));
   string_f_int (tk, rem_port);
   string_append (buf, tk);
