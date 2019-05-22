@@ -32,5 +32,3 @@ call src_pas %srcdir% smtp_subs %1
 
 call src_lib %srcdir% %libname%
 call src_msg %srcdir% %libname%
-
-call src_doc %srcdir% email.txt

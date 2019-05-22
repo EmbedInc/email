@@ -7,3 +7,4 @@ call godir "(cog)source/email"
 
 call build_lib
 call build_progs
+call build_doc
