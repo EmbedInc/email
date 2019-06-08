@@ -92,8 +92,8 @@ var
   stat2: sys_err_t;                    {to avoid corrupting STAT}
 
 label
-  loop_cmd, adr_ok, adr_bad, loop_msg,
-  done_msg, done_auth, done_cmd, err_syn_args, abort;
+  loop_cmd, adr_ok, adr_bad, loop_msg, done_msg,
+  auth_getuser, auth_getpswd, auth_auth, done_auth, done_cmd, err_syn_args, abort;
 {
 **********************************************************************************
 *
@@ -661,10 +661,66 @@ otherwise                              {unrecognized help topic}
 *   AUTH <auth type name> [<key>]
 }
 11: begin
-  abort_message (stat);
+  abort_message (stat);                {abort old unfinished mail message, if any}
   if sys_error(stat) then goto abort;
   auth := false;                       {init to client not authorized}
 
+  string_token (buf, p, tk, stat);     {get AUTH subcommand}
+  if string_eos(stat) then goto auth_getuser;
+  if sys_error(stat) then goto abort;
+  string_upcase (tk);                  {make upper case for keyword matching}
+  string_tkpick80 (tk,                 {pick subcommand from list}
+    'LOGIN PLAIN',
+    pick);
+  case pick of                         {which AUTH subcommand is it ?}
+{
+*   AUTH LOGIN [user] [password]
+}
+1:  begin
+      string_token (buf, p, str, stat); {try to get optional user name}
+      if string_eos(stat) then goto auth_getuser;
+      if sys_error(stat) then goto abort;
+      string_f_base64 (str, user);     {convert from BASE64 encoding}
+
+      string_token (buf, p, str, stat); {try to get optional password}
+      if string_eos(stat) then goto auth_getpswd;
+      if sys_error(stat) then goto abort;
+      string_f_base64 (str, pswd);     {convert from BASE64 encoding}
+
+      goto auth_auth;                  {go authenticate USER and PSWD}
+      end;
+{
+*   AUTH PLAIN [user password]
+}
+2:  begin
+      string_token (buf, p, tk, stat); {try to get user-password BASE64 string}
+      if string_eos(stat) then goto auth_getuser;
+      if sys_error(stat) then goto abort;
+      string_f_base64 (tk, str);       {get plain text user and password string}
+      p2 := 1;                         {init user-password parse index}
+
+      string_token (str, p2, tk, stat); {try to get optional user name}
+      if string_eos(stat) then goto auth_getuser;
+      if sys_error(stat) then goto abort;
+      string_f_base64 (tk, user);      {convert from BASE64 encoding}
+
+      string_token (str, p2, tk, stat); {try to get optional password}
+      if string_eos(stat) then goto auth_getpswd;
+      if sys_error(stat) then goto abort;
+      string_f_base64 (tk, pswd);      {convert from BASE64 encoding}
+
+      goto auth_auth;                  {go authenticate USER and PSWD}
+      end;
+{
+*   Unrecognized AUTH subcommand.
+}
+otherwise
+    goto abort;
+    end;
+{
+*   Prompt and get user name into USER.
+}
+auth_getuser:                          {nothing recceived prompt for user name}
   string_vstring (str, '334 '(0), -1); {init challenge response string}
   string_vstring (tk, 'Username:'(0), -1); {challenge command}
   string_t_base64 (tk, tk2);           {convert challenge command to BASE64}
@@ -675,8 +731,10 @@ otherwise                              {unrecognized help topic}
   inet_vstr_crlf_get (str, client.conn, stat); {get client response to USERNAME challenge}
   if sys_error(stat) then goto abort;
   string_f_base64 (str, user);         {convert from BASE64 encoding}
-  string_downcase (user);              {user names are queue names, and lower case}
-
+{
+*   Prompt and get password into PSWD.
+}
+auth_getpswd:
   string_vstring (str, '334 '(0), -1); {init challenge response string}
   string_vstring (tk, 'Password:'(0), -1); {challenge command}
   string_t_base64 (tk, tk2);           {convert challenge command to BASE64}
@@ -689,12 +747,13 @@ otherwise                              {unrecognized help topic}
   string_f_base64 (str, pswd);         {convert from BASE64 encoding}
 {
 *   The client has supplied a user name and password, which have been
-*   stored in USER and PSWD.  USER has been converted to all lower case,
-*   but PSWD has been left as supplied by the client.
+*   stored in USER and PSWD.
 *
 *   Now validate USER and PSWD.  The boolean variable AUTH is set to TRUE
 *   on successful validation.  AUTH has already been initialized to FALSE.
 }
+auth_auth:
+  string_downcase (user);              {user names are queue names, and lower case}
   if user.len <= 0 then goto done_auth; {no user name specified ?}
 
   smtp_queue_opts_get (qdir, user, qopt2, stat); {get info about user's queue}
