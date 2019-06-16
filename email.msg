@@ -193,7 +193,7 @@ msg dialup_reused
   lan english -def
     %p1s Already connected to %p2s.
 /*
-/*   Messages related to email issues.
+/*   Messages related to email address translation issues.
 /*
 msg email_adr_none
   lan english -def
@@ -381,3 +381,90 @@ msg qprint_read_open_conn
   lan english -def
     Error occurred on attempt to set up for interpreting an existing text
     data stream as quoted printable.
+/*
+/*   Messages specific to the POP3 server.
+/*
+msg pop3_command_bad
+  lan english -def
+    On send -ERR for bad command "%p1s".
+msg pop3_command_end
+  lan english -def
+    Error found on done processing command %p1s.
+
+msg pop3_dele_n_bad
+  lan english -def
+    On send -ERR response to DELE command with bad message number.
+msg pop3_dele_ok
+  lan english -def
+    On send +OK response to DELE command.
+
+msg pop3_list_n_bad
+  lan english -def
+    On send -ERR response to LIST command with bad message number.
+msg pop3_list_n_bad
+  lan english -def
+    On send +OK response to LIST command with valid message number.
+msg pop3_list_nparm
+  lan english -def
+    On send initial +OK response to LIST command with no parameters.
+msg pop3_list_nparm_msg
+  lan english -def
+    On send message info in response to LIST command with no parameters.
+
+msg pop3_multiline_end
+  lan english -def
+    On send line ending multi-line response to %p1s command.
+
+msg pop3_noop_ok
+  lan english -def
+    On send +OK response to NOOP command.
+
+msg pop3_parm_bad
+  lan english -def
+    On send -ERR response to bad or missing parameter to %p1s command.
+
+msg pop3_pass_accepted
+  lan english -def
+    On send response to PASS command that user was accepted.
+msg pop3_pass_denied
+  lan english -def
+    On send response to PASS command that user was denied.
+msg pop3_pass_nuser
+  lan english -def
+    On send response to PASS command with no user defined.
+
+msg pop3_quit_del_open
+  lan english -def
+    In POP3 QUIT command, open mail message in preperation for deletion.
+msg pop3_quit_ok
+  lan english -def
+    On send +OK response to QUIT command.
+
+msg pop3_retr_abort
+  lan english -def
+    On close queue entry for file %p1s, on aborting RETR command.
+msg pop3_retr_line
+  lan english -def
+    On send mail message line to client.
+msg pop3_retr_n_bad
+  lan english -def
+    On send -ERR response to RETR command with bad message number.
+msg pop3_retr_n_bad
+  lan english -def
+    On send initial +OK response to RETR command.
+
+msg pop3_rset_ok
+  lan english -def
+    On send +OK response to RSET command.
+
+msg pop3_stat_response
+  lan english -def
+    On send response to STAT command.
+
+msg pop3_state_bad
+  lan english -def
+    On send -ERR response to %p1s command received in wrong state.
+
+msg pop3_user_ok
+  lan english -def
+    Error on send "+OK" response to USER command.

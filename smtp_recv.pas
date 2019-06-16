@@ -711,12 +711,8 @@ otherwise                              {unrecognized help topic}
 
       goto auth_auth;                  {go authenticate USER and PSWD}
       end;
-{
-*   Unrecognized AUTH subcommand.
-}
-otherwise
-    goto abort;
-    end;
+
+    end;                               {unrecognized AUTH subcommand, proceed as if none}
 {
 *   Prompt and get user name into USER.
 }
