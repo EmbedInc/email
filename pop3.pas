@@ -18,6 +18,12 @@ program pop3;
 const
   pop3_port_k = 110;                   {standard port for POP3 server}
   max_msg_parms = 1;                   {max parameters we can pass to a message}
+  ipsave_n = 16;                       {number of last connection attempt IPs to save}
+  ip_rej_sec = 30.0;                   {reject request if last bad within this time, seconds}
+{
+*   Derived constants.
+}
+  ipsave_last = ipsave_n - 1;          {last valid 0-N index for saved IP address}
 
 type
   msg_ent_t = record                   {info about each possible mail queue entry}
@@ -28,6 +34,11 @@ type
 
   msg_ar_t = array[1..1] of msg_ent_t; {template for client message numbers array}
   msg_ar_p_t = ^msg_ar_t;
+
+  remconn_t = record                   {info about one remote connection attempt}
+    ip: sys_inet_adr_node_t;           {IP address}
+    time: sys_clock_t;                 {time of connection attempt}
+    end;
 
 var
   opt:                                 {command line option name or client cmd name}
@@ -58,15 +69,24 @@ var
   mconn_p: file_conn_p_t;              {pointer to message body connection handle}
   rem_adr: sys_inet_adr_node_t;        {address of remote client node}
   rem_port: sys_inet_port_id_t;        {client port on remote node}
+  connlist:                            {list of recent bad connection requests}
+    array[0 .. ipsave_last] of remconn_t;
+  connext: sys_int_machine_t;          {CONNLIST index where to store next}
+  connt: sys_clock_t;                  {time of current connection request}
+  time: sys_clock_t;                   {scratch time value}
+  dt: real;                            {scratch delta time value, seconds}
+  reminfo: boolean;                    {info on remote connection is valid}
   user_ok: boolean;                    {TRUE if user properly autenticated}
+  conn_ok: boolean;                    {connection attempt was valid}
 
   msg_parm:                            {parameter references for messages}
     array[1..max_msg_parms] of sys_parm_msg_t;
   stat: sys_err_t;                     {completion status code}
 
 label
-  loop_opts, done_opts, loop_server, loop_cmd, loop_retr, eof_retr, retr_abort,
-  done_cmd, done_multiline, wrong_state, err_parm, abort_client;
+  loop_opts, done_opts, loop_server, next_listent, loop_cmd, loop_retr,
+  eof_retr, retr_abort, done_cmd, done_multiline, wrong_state, err_parm,
+  abort_client;
 {
 ******************************************************************************
 *
@@ -89,6 +109,7 @@ label
 begin
   authenticate := false;               {init to user authentication failed}
   user_ok := false;
+  conn_ok := false;
 
   smtp_queue_read_open (               {try to open mail queue for read}
     queue,                             {generic queue name (user name)}
@@ -104,6 +125,7 @@ begin
 
   authenticate := true;                {everything looks right}
   user_ok := true;
+  conn_ok := true;
   return;                              {return with TRUE}
 
 abort:                                 {jump here on failure with QCONN open}
@@ -273,6 +295,19 @@ done_opts:                             {done reading the command line}
 {
 *   Done with command line.
 *
+*   Init local state.
+}
+  time :=                              {make time for save IP to be stale}
+    sys_clock_sub (
+      sys_clock,                       {start with the current time}
+      sys_clock_from_fp_rel (ip_rej_sec + 1.0) {back enough to guarantee stale}
+      );
+  for ii := 0 to ipsave_last do begin  {loop over the list of saved connection attempts}
+    connlist[ii].ip := 0;              {init to invalid IP address}
+    connlist[ii].time := time;         {set time to indicate IP address stale anyway}
+    end;
+  connext := 0;                        {init where to store next connection attempt}
+{
 *   Establish internet server.
 }
   file_create_inetstr_serv (           {create internet server port}
@@ -314,6 +349,8 @@ loop_server:                           {back here for each new client}
   queue.len := 0;                      {init to no user name given}
   pass.len := 0;                       {init to no password given}
   user_ok := false;                    {init to user not authenticated}
+  conn_ok := false;                    {init to not a valid connection request}
+  reminfo := false;                    {init to info on remote client not valid}
 {
 *   Wait for a client to connect.
 }
@@ -323,6 +360,7 @@ loop_server:                           {back here for each new client}
     stat);
   if sys_error_check (stat, 'file', 'inetstr_accept', nil, 0)
     then goto loop_server;             {try next client on error}
+  connt := sys_clock;                  {save time of the connection request}
   file_inetstr_tout_rd (conn_client, smtp_tout_rd_k); {set read timeout}
   file_inetstr_tout_wr (conn_client, smtp_tout_wr_k); {set write timeout}
 
@@ -333,6 +371,42 @@ loop_server:                           {back here for each new client}
     stat);
   if sys_error_check (stat, 'file', 'inet_info_remote', nil, 0)
     then goto abort_client;            {abort this client on error}
+  reminfo := true;                     {indicate REM_xxx data is now valid}
+{
+*   Check for whether to ignore this client.  To quickly reject arbitrary
+*   connection requests, a new connection is rejected if there was a failed
+*   request from the same IP address within IP_REJ_SEC seconds.  The list of
+*   recent failed connection requests is in CONNLIST.  A failed connection
+*   request is one that does not result in a authenticated user.
+*
+*   CONNEXT is the CONNLIST index of where to write the next connection.
+*   CONNLIST is a circular buffer.  To search saved connection requests in
+*   newest to oldest order therefore starts at CONNEXT-1 and continues until
+*   reaching CONNEXT.  Note that this decrement is performed by wrapping back
+*   from 0 to IPSAVE_LAST.
+}
+  ii := connext - 1;                   {init index to most recent saved entry}
+  while true do begin                  {loop over entries, newest to oldest}
+    if ii < 0 then ii := ipsave_last;  {wrap back to end of the array ?}
+    if rem_adr <> connlist[ii].ip then goto next_listent; {not same client machine ?}
+    dt := sys_clock_to_fp2 (sys_clock_sub ( {make time since last failed connection request}
+      connt,                           {time of this connection}
+      connlist[ii].time));             {time of last failed attempt}
+    if dt <= ip_rej_sec then begin     {too recent, dirtbag detected ?}
+      time_string (buf);               {init message with current time string}
+      string_appends (buf, '  Rejecting repeat offender on '(0));
+      string_f_inetadr (tk, rem_adr);
+      string_append (buf, tk);
+      string_appends (buf, ' at port '(0));
+      string_f_int (tk, rem_port);
+      string_append (buf, tk);
+      writeln (buf.str:buf.len);
+      goto abort_client;
+      end;
+next_listent:                          {advance to the next older list entry}
+    if ii = ipsave_last then exit;     {already at oldest list entry ?}
+    ii := ii - 1;                      {to next older entry, will wrap above}
+    end;                               {back to process this next older entry}
 
   if debug_inet < 5 then begin         {show remote system info ?}
     time_string (buf);                 {init output line with current date/time}
@@ -773,6 +847,15 @@ abort_client:
     smtp_queue_read_close (qconn, stat); {try to close mail queue connection}
     sys_msg_parm_vstr (msg_parm[1], qconn.qdir);
     sys_error_print (stat, 'email', 'email_queue_read_close', msg_parm, 1);
+    end;
+
+  if (not conn_ok) and reminfo then  begin {log this as a bad connection ?}
+    connlist[connext].ip := rem_adr;   {save dirtbag's IP address}
+    connlist[connext].time := connt;   {save time of the connect attempt}
+    connext := connext + 1;            {update where to write next entry}
+    if connext > ipsave_last then begin {wrap from end of array back to start}
+      connext := 0;
+      end;
     end;
 
   time_string (parm);
