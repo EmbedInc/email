@@ -78,6 +78,7 @@ var
   reminfo: boolean;                    {info on remote connection is valid}
   user_ok: boolean;                    {TRUE if user properly autenticated}
   conn_ok: boolean;                    {connection attempt was valid}
+  show_abort: boolean;                 {write Aborted message to StdOut on abort}
 
   msg_parm:                            {parameter references for messages}
     array[1..max_msg_parms] of sys_parm_msg_t;
@@ -351,6 +352,7 @@ loop_server:                           {back here for each new client}
   user_ok := false;                    {init to user not authenticated}
   conn_ok := false;                    {init to not a valid connection request}
   reminfo := false;                    {init to info on remote client not valid}
+  show_abort := true;                  {init to show message on abort}
 {
 *   Wait for a client to connect.
 }
@@ -401,6 +403,7 @@ loop_server:                           {back here for each new client}
       string_f_int (tk, rem_port);
       string_append (buf, tk);
       writeln (buf.str:buf.len);
+      show_abort := false;             {don't bother showing additional abort message}
       goto abort_client;
       end;
 next_listent:                          {advance to the next older list entry}
@@ -858,9 +861,11 @@ abort_client:
       end;
     end;
 
-  time_string (parm);
-  string_appends (parm, '    Aborted.');
-  writeln (parm.str:parm.len);
+  if (debug_inet >= 5) or show_abort then begin
+    time_string (parm);
+    string_appends (parm, '    Aborted.');
+    writeln (parm.str:parm.len);
+    end;
 
   if debug_inet >= 10 then writeln ('Calling FILE_CLOSE on client stream.');
   file_close (conn_client);            {close connection to client}
