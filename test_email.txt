@@ -1,0 +1,52 @@
+
+
+                      Embed Inc Program TEST_EMAIL
+
+test_email [<email address>]
+
+Test email address manipulation.  This program can be useful in
+checking and debugging the MAIL.ADR environment file set.  See the
+MAIL_ADR documentation file for an explanation of the MAIL.ADR
+environment file set.
+
+If an email address is given on the command line, that address will be
+read in and translated thru the MAIL.ADR environment file set.  The
+result will be printed and the program will exit.  This mode is
+intended for a quick check of the translation of an email address.
+
+If nothing is given on the command line, the program will enter an
+interactive mode.  A current email address is maintained and acted on
+by commands.  The address is initialized to empty, and written out in
+different formats after each command that modifies it.  Commands are:
+
+  DEL [<token type>]
+
+       Delete the specified address token if <token type> is given.
+       Otherwise delete the entire address.  Token type names are:
+
+         DOM_FIRST  -  First domain name
+
+         DOM_LAST  -  Last domain name
+
+         SYS_FIRST  -  First system name
+
+         SYS_LAST  -  Last system name
+
+         USER  -  User name
+
+  ADD <address string>
+
+       Add the incremental address to the current address.
+
+  NEW <address string>
+
+       Replace the current address with the address indicated by
+       <address string>.
+
+  XL
+
+       Translate the address thru the MAIL.ADR environment file set.
+
+  Q
+
+       Quit the program.

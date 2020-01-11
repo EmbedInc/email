@@ -30,16 +30,16 @@ var
   adr_n: sys_int_machine_t;            {number of dest address currently doing}
   n_msg: sys_int_machine_t;            {number of messages in MSG_PARM}
   msg:                                 {scratch message name}
-    %include '/cognivision_links/dsee_libs/string/string80.ins.pas';
+    %include '(cog)lib/string80.ins.pas';
   fnam_unique,                         {unique file name component}
   suffix_script:                       {script file name suffix on this system}
-    %include '/cognivision_links/dsee_libs/string/string_leafname.ins.pas';
+    %include '(cog)lib/string_leafname.ins.pas';
   tnam,                                {scratch tree name}
   fnam_body,                           {name of file containing message body}
   fnam_shell,                          {name of file containing optional shell script}
   fnam_script,                         {name of file containing mailer script}
   fnam_temp:                           {temp file prefix for use in scripts}
-    %include '/cognivision_links/dsee_libs/string/string_treename.ins.pas';
+    %include '(cog)lib/string_treename.ins.pas';
   conn_lock: file_conn_t;              {handle to interlock file}
   conn_out: file_conn_t;               {scratch connection handle to output file}
   conn_in: file_conn_t;                {scratch connection handle to input file}
@@ -56,7 +56,7 @@ var
   str_hour,
   str_minute,
   str_second:
-    %include '/cognivision_links/dsee_libs/string/string4.ins.pas';
+    %include '(cog)lib/string4.ins.pas';
   pick: sys_int_machine_t;             {number of token picked from list}
   mailer_try: sys_int_machine_t;       {number of attempt to run mailer}
   p: string_index_t;                   {parse index}
@@ -66,7 +66,7 @@ var
   mailer,                              {mailer name from first domain name}
   sys,                                 {first system name of mail address}
   sys_local:                           {local system name for editing return address}
-    %include '/cognivision_links/dsee_libs/string/string80.ins.pas';
+    %include '(cog)lib/string80.ins.pas';
   adr_full,                            {full mail address sent on to mailer program}
   adr2,                                {address with first system name removed}
   buf,                                 {one line buffer}
@@ -74,7 +74,7 @@ var
   info_site,                           {info string for local site}
   cmd,                                 {command string for executing mailer}
   token:                               {scratch token}
-    %include '/cognivision_links/dsee_libs/string/string256.ins.pas';
+    %include '(cog)lib/string256.ins.pas';
   exstat: sys_sys_exstat_t;            {unused}
   msg_parm:                            {parameter references for messages}
     array[1..max_msg_parms] of sys_parm_msg_t;

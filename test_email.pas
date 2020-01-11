@@ -50,9 +50,9 @@ var
   ibuf,                                {one line input buffer}
   obuf,                                {one line output buffer}
   parm:                                {command parameter}
-    %include '/cognivision_links/dsee_libs/string/string132.ins.pas';
+    %include '(cog)lib/string132.ins.pas';
   cmd:                                 {current command name}
-    %include '/cognivision_links/dsee_libs/string/string32.ins.pas';
+    %include '(cog)lib/string32.ins.pas';
   stat: sys_err_t;                     {completion status code}
 
   prompt: string_var4_t :=             {command prompt}

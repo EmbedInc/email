@@ -5,8 +5,8 @@
 module inet_sys;
 define inet_connect;
 define inet_disconnect;
-%include '/cognivision_links/dsee_libs/progs/email2.ins.pas';
-%include '/cognivision_links/dsee_libs/sys/sys_sys2.ins.pas';
+%include 'email2.ins.pas';
+%include 'sys_sys2.ins.pas';
 {
 ********************************************************************
 *

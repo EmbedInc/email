@@ -5,7 +5,7 @@ define inet_cstr_crlf_put;
 define inet_str_crlf_put;
 define inet_vstr_crlf_put;
 define inet_vstr_crlf_get;
-%include '/cognivision_links/dsee_libs/progs/email2.ins.pas';
+%include 'email2.ins.pas';
 
 const
   cr_k = chr(13);                      {carriage return character}

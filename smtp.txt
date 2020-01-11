@@ -1,0 +1,96 @@
+                         Embed Inc Program SMTP
+                           Updated 5 June 2011
+
+
+smtp <options>
+
+Perform SMTP (Simple Mail Transfer Protocol).  This program can perform
+several roles, depending on the command line options.
+
+The command line options are:
+
+  -SERVER
+
+       Act as an SMTP server.  The program will wait for connections from
+       clients on remote machines.  This is the default.
+
+  -CLIENT
+
+       Act as an SMTP client.  The program will connect to a server on a
+       remote machine.  The default is -SERVER.
+
+  -ENQUEUE
+
+       Add an entry to the input mail queue.  The input mail queue can be
+       selected with the -INQ command line option.  -ENQUEUE requires that
+       specific target addresses be supplied.  This can be accomplished
+       with the -TO or -ADRFILE command line options. The default is
+       -SERVER.
+
+  -OUTQ <queue name>
+
+       Indicates a specific mail queue to send mail from.  An outgoing
+       mail queue name is required for the program to send mail.  The mail
+       queue name is the subdirectory name within the Embed Inc directory
+       SMTPQ.  Each specific queue only handles mail destined for one
+       remote system.  The remote system name is stored in the queue, and
+       therefore is implied when the queue name is given.
+
+       By default in client mode, the program attempts to send all mail
+       from all queues.
+
+  -INQ <queue name>
+
+       Indicates specific incoming mail queue to use.  A default may be
+       specified in the mail queue OPTIONS file.
+
+  -ADRFILE <adressess list file name>
+
+       Specifies mail target address by giving the name of an addresses
+       list file.  Each line in the file must be one target address. The
+       -ADRFILE command line option adds to the target address list.  The
+       default target address list is empty.
+
+  -MSG <mail message file name>
+
+       Indicate a file containing a mail message.  This may be used, for
+       example, with the -ENQUEUE command line option.  The default is no
+       mail message file is known.
+
+  -MUTE
+
+       Disable status and debug messages as much as possible.  This is
+       equivalent to -DEBUG 0.  The default is -DEBUG 5, see below.
+
+  -DEBUG level
+
+       Set the level of status and debug messages.  0 disables all
+       optional messages.  The maximum level is 10.  The default is 0.
+
+  -PORT port
+
+       Sets the TCP port number to establish the SMTP server on.  This is
+       only relevant in server mode.  The default is 25, which is the
+       standard SMTP port.
+
+  -ANYPORT
+
+       Allow the server to establish itself on any internet port.  The
+       default is to terminate with an error in server mode if unable to
+       become a server on the desired port (see -PORT option, above).
+
+  -1
+
+       Allow only one client at a time in client mode.  By default, each
+       client is processed concurrently in a separate thread.  The -1
+       option also prevents multiple threads from being created. The
+       single client is processed in the main (and only) thread. This
+       command line option is intended for debugging.
+
+  -TO <target adr1> ... <target adrN>
+
+       Specifies an explicit list of mail target addresses.  All remaining
+       tokens after the "-TO" command line option are interpreted as
+       target addresses.  Therefore, -TO is always the last command line
+       option.  The -TO command line option adds to the target address
+       list.  The default target address list is empty.
