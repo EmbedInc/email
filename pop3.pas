@@ -112,17 +112,35 @@ begin
   user_ok := false;
   conn_ok := false;
 
+  if debug_inet >= 10 then begin
+    writeln ('Authenticating user "', queue.str:queue.len,
+      '", password "', pass.str:pass.len, '"');
+    end;
+
   smtp_queue_read_open (               {try to open mail queue for read}
     queue,                             {generic queue name (user name)}
     mem_p^,                            {parent memory context for queue read state}
     qconn,                             {returned connection handle for reading queue}
     stat);
-  if sys_error(stat) then return;      {assume no queue of this name}
+  if sys_error(stat) then begin        {assume no queue of this name}
+    if debug_inet >= 10 then begin
+      writeln ('  Queue "', queue.str:queue.len, '" not found');
+      end;
+    return;
+    end;
 
-  if not qconn.opts.pop3               {this mail queue not enabled for POP3 ?}
-    then goto abort;
-  if not string_equal (pass, qconn.opts.pswdget) {password doesn't match ?}
-    then goto abort;
+  if not qconn.opts.pop3 then begin    {this mail queue not enabled for POP3 ?}
+    if debug_inet >= 10 then begin
+      writeln ('  POP3 not enabled in this queue');
+      end;
+    goto abort;
+    end;
+  if not string_equal (pass, qconn.opts.pswdget) then begin {password doesn't match ?}
+    if debug_inet >= 10 then begin
+      writeln ('  Password mismatch');
+      end;
+    goto abort;
+    end;
 
   authenticate := true;                {everything looks right}
   user_ok := true;
